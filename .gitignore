@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+
+# Build
+dist
+dist-ssr
+
+# Environment (секреты Firebase — НИКОГДА в git)
+.env
+.env.*
+!.env.example
+
+# Vite / локальные оверрайды (в т.ч. .env.local)
+*.local
+
+# Vercel
+.vercel
+
+# Firebase CLI
+.firebase
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Test / coverage
+coverage

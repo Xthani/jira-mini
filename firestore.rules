@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function projectData(pid) {
+      return get(/databases/$(database)/documents/projects/$(pid)).data;
+    }
+
+    function isMemberOfProject(pid) {
+      return signedIn() && request.auth.uid in projectData(pid).memberIds;
+    }
+
+    function isOwnerOfProject(pid) {
+      return signedIn() && projectData(pid).ownerUid == request.auth.uid;
+    }
+
+    // Список проектов: where('memberIds', 'array-contains', uid) — только resource.data
+    match /projects/{projectId} {
+      allow read: if signedIn()
+        && request.auth.uid in resource.data.memberIds;
+
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == 1
+        && request.auth.uid in request.resource.data.memberIds
+        && request.resource.data.taskCounter == 0
+        && request.resource.data.slug is string
+        && request.resource.data.inviteCode is string
+        && request.resource.data.name is string;
+
+      allow update: if isOwnerOfProject(projectId);
+
+      allow update: if signedIn()
+        && request.resource.data.inviteCode == resource.data.inviteCode
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.slug == resource.data.slug
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.taskCounter == resource.data.taskCounter
+        && request.resource.data.memberIds is list
+        && resource.data.memberIds is list
+        && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+        && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+        && request.auth.uid in request.resource.data.memberIds
+        && !(request.auth.uid in resource.data.memberIds);
+
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.memberIds
+        && request.resource.data.inviteCode == resource.data.inviteCode
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.slug == resource.data.slug
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.memberIds == resource.data.memberIds
+        && request.resource.data.taskCounter == resource.data.taskCounter + 1;
+    }
+
+    match /projects/{projectId}/members/{memberUid} {
+      allow read: if isMemberOfProject(projectId);
+      allow create, update: if isMemberOfProject(projectId) && request.auth.uid == memberUid;
+    }
+
+    match /projects/{projectId}/tasks/{taskId} {
+      allow read: if isMemberOfProject(projectId);
+      allow create: if isMemberOfProject(projectId)
+        && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.assigneeUid is string
+        && request.resource.data.assigneeUid in projectData(projectId).memberIds;
+      allow update, delete: if isMemberOfProject(projectId);
+    }
+  }
+}
