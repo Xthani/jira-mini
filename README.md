@@ -1,148 +1,65 @@
-# Мини-Жира
+# Jira Mini
 
-Канбан-доска для небольших команд разработчиков: проекты, задачи с номерами (`JIRA-1`), Google-вход, Firestore в реальном времени.
+A real-time collaborative Kanban workspace for small product and engineering teams. Jira Mini combines project membership, invitation flows, task lifecycle management, and route-driven task views in a focused React application.
 
-## Возможности
+## Product capabilities
 
-- Вход через **Google** (Firebase Auth)
-- **Проекты** с командой: только участники видят доску
-- Приглашение по **ссылке** или **ID + код**
-- Канбан: Бэклог → В работе → Готово (drag-and-drop)
-- Задачи: создание, **просмотр** (отдельная страница), редактирование, удаление
-- Номер задачи: `ПРЕФИКС-N` (префикс задаётся при создании проекта)
-- Назначение исполнителя на любого участника проекта
+- Google authentication through Firebase Auth
+- Private team workspaces backed by Firestore
+- Project invitations by link or project ID and access code
+- Backlog, in-progress, and completed columns with drag and drop
+- Structured task identifiers such as `WEB-42`
+- Task creation, assignment, editing, detail views, and deletion
+- Real-time synchronization across active team members
+- Firestore security rules and production deployment configuration
 
-## Стек
+## Engineering highlights
 
-- React 19 + Vite 8
-- Tailwind CSS 4
-- Firebase (Auth, Firestore)
-- `@hello-pangea/dnd`, `lucide-react`
+- React 19 application built with Vite 8
+- Firebase Auth and Firestore data model
+- Route synchronization without a heavy routing dependency
+- Reusable loading and error states
+- Responsive interface built with Tailwind CSS 4
+- CI checks for linting and production builds
 
-## Быстрый старт
+## Stack
 
-### 1. Зависимости
+React 19, JavaScript, Vite, Tailwind CSS, Firebase Auth, Firestore, `@hello-pangea/dnd`, ESLint
 
-```bash
-npm install
-```
-
-### 2. Переменные окружения
-
-Скопируй шаблон и подставь данные из **Firebase Console → Project settings → Your apps → Web**:
+## Local setup
 
 ```bash
+npm ci
 cp .env.example .env.local
-```
-
-### 3. Firebase (один раз)
-
-1. **Authentication** → Google → включить.
-2. **Firestore** → создать БД.
-3. **Firestore → Rules** → вставить содержимое файла [`firestore.rules`](./firestore.rules) → **Publish**.
-4. **Google Cloud** (проект Firebase) → **Credentials** → Browser key: для локальной разработки добавь в HTTP referrers `http://localhost:5173/*` или временно **None** для API restrictions.
-
-Подробнее про правила: [`FIRESTORE_RULES.md`](./FIRESTORE_RULES.md).
-
-### 4. Запуск
-
-```bash
 npm run dev
 ```
 
-Открой `http://localhost:5173`.
+Add the Firebase web application values from Firebase Console to `.env.local`, enable Google authentication, and publish the included [`firestore.rules`](./firestore.rules).
 
-## Скрипты
+## Commands
 
-| Команда | Описание |
-|---------|----------|
-| `npm run dev` | Dev-сервер |
-| `npm run build` | Production-сборка в `dist/` |
-| `npm run preview` | Просмотр сборки локально |
-| `npm run lint` | ESLint |
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run lint` | Run static analysis |
+| `npm run build` | Create a production build |
+| `npm run preview` | Preview the build locally |
 
-## Маршруты приложения
+## Routes
 
-| URL | Экран |
-|-----|--------|
-| `/` | Список проектов (после входа) |
-| `/projects/{projectId}` | Канбан-доска |
-| `/projects/{projectId}/tasks/{taskId}` | Просмотр задачи |
-| `/?join={id}&code={code}` | Вступление в проект по ссылке |
+| Route | Purpose |
+| --- | --- |
+| `/` | Project hub |
+| `/projects/{projectId}` | Kanban board |
+| `/projects/{projectId}/tasks/{taskId}` | Task details |
+| `/?join={id}&code={code}` | Project invitation |
 
-## Структура проекта
+## Security and deployment
 
-```
-src/
-  components/     UI: Auth, ProjectHub, ProjectView, KanbanBoard, TaskDetailPage, TaskModal
-  components/ui/  Переиспользуемые блоки (ошибки, загрузка)
-  hooks/          useAppRoute — синхронизация URL
-  lib/            Firebase API, маршруты, константы задач
-  firebase.js     Инициализация Firebase
-firestore.rules   Правила безопасности Firestore (копировать в консоль)
-```
+Client-side Firebase configuration is intentionally provided through environment variables. Access control is enforced by Firestore rules, project membership checks, authorized authentication domains, and API key referrer restrictions.
 
-## Деплой
+The repository includes SPA routing configuration for both Vercel and Firebase Hosting.
 
-### Сборка
+## Current scope
 
-```bash
-npm run build
-```
-
-Папка `dist/` — статика для хостинга.
-
-### Vercel (бесплатный хостинг)
-
-1. Репозиторий подключи к [Vercel](https://vercel.com) (Import Git Repository).
-2. **Framework Preset:** Vite. **Build Command:** `npm run build`. **Output Directory:** `dist`.
-3. В **Settings → Environment Variables** добавь все переменные из [`.env.example`](./.env.example) (см. ниже «Переменные на проде»).
-4. Deploy. Файл [`vercel.json`](./vercel.json) уже настроен: все маршруты (`/projects/...`) отдают `index.html`.
-
-После первого деплоя в **Firebase Console → Authentication → Settings → Authorized domains** добавь домен вида `твой-проект.vercel.app` (и custom domain, если будет).
-
-### Firebase Hosting (альтернатива)
-
-1. Установи CLI: `npm install -g firebase-tools`
-2. `firebase login`
-3. В корне уже есть `firebase.json` — привяжи проект: `firebase use jira-mini-d349d` (свой ID).
-4. `firebase deploy --only hosting`
-
-В **Firebase Console → Hosting** добавь домен. В **Authentication → Authorized domains** — тот же домен.
-
-### Переменные на проде (Vercel и любой хостинг)
-
-Vite подставляет `VITE_*` **только во время `npm run build`**. Локально — из `.env.local` (в git не попадает). На Vercel — из панели **Environment Variables**.
-
-| Переменная | Откуда взять (Firebase Console → Project settings → Your apps → Web) |
-|------------|----------------------------------------------------------------------|
-| `VITE_FIREBASE_API_KEY` | `apiKey` |
-| `VITE_FIREBASE_AUTH_DOMAIN` | `authDomain` |
-| `VITE_FIREBASE_PROJECT_ID` | `projectId` |
-| `VITE_FIREBASE_STORAGE_BUCKET` | `storageBucket` |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | `messagingSenderId` |
-| `VITE_FIREBASE_APP_ID` | `appId` |
-
-В Vercel для каждой переменной включи окружения **Production** (и **Preview**, если нужны превью-деплои). Имена должны совпадать **точно**, с префиксом `VITE_`.
-
-После добавления переменных сделай **Redeploy** (пересборка), иначе в бандле останутся пустые ключи.
-
-**Важно:** для веб-клиента Firebase ключи в JS всё равно видны в браузере — это нормально. Защита через **Firestore Rules** и ограничения API key в Google Cloud (HTTP referrers на домен Vercel).
-
-### Чеклист перед продакшеном
-
-- [ ] Опубликованы актуальные `firestore.rules`
-- [ ] В Google Cloud ограничен API key (referrers продакшен-домена)
-- [ ] В Firebase добавлены authorized domains
-- [ ] Проверен вход Google и создание/редактирование задач на проде
-- [ ] SPA: все пути отдают `index.html` (в `firebase.json` настроено)
-
-## Ограничения (осознанно)
-
-- Нет ролей «только чтение» — все участники проекта равны по CRUD задач (кроме добавления участников: только владелец).
-- Нет email-уведомлений и комментариев к задачам.
-- Роутинг на `history.pushState` без React Router (достаточно для SPA).
-
-## Лицензия
-
-Private / учебный прототип.
+All project members can manage tasks. Read-only roles, comments, and notification delivery are natural next steps rather than hidden mock functionality.
